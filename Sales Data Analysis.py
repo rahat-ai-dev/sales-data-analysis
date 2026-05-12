@@ -76,3 +76,38 @@ df = pd.DataFrame({
 
 print(f"\n[1] Raw Data Generated — {len(df)} rows, {df.shape[1]} columns")
 print(df.head(6).to_string(index=False))
+
+
+# ─────────────────────────────────────────────
+# Step 2: Data Cleaning
+# ─────────────────────────────────────────────
+print("\n" + "-" * 60)
+print("  Step 2 — Data Cleaning")
+print("-" * 60)
+
+print(f"\nNaN count (price): {df['price'].isna().sum()}")
+print(f"Invalid prices (<0): {(df['price'] < 0).sum()}")
+
+df['price'] = df['price'].where(df['price'] > 0, np.nan)
+df['price'] = df.groupby('product')['price'].transform(
+    lambda x: x.fillna(x.median())
+)
+
+df['product']  = df['product'].astype('category')
+df['category'] = df['category'].astype('category')
+df['region']   = df['region'].astype('category')
+df['discount'] = df['discount'].astype('int8')
+df['quantity'] = df['quantity'].astype('int8')
+df['price']    = df['price'].astype('float32')
+
+print(f"NaN count after cleaning: {df.isna().sum().sum()}")
+print(f"Memory (after optimize): {df.memory_usage(deep=True).sum() / 1024:.1f} KB")
+
+df['revenue']      = (df['price'] * df['quantity']).astype('float32')
+df['discount_amt'] = (df['revenue'] * df['discount'] / 100).astype('float32')
+df['net_revenue']  = (df['revenue'] - df['discount_amt']).astype('float32')
+df['month']        = df['date'].dt.month
+df['month_name']   = df['date'].dt.strftime('%b')
+
+print("\n[2] Cleaned DataFrame (first 5 rows):")
+print(df[['product','region','price','quantity','discount','net_revenue']].head(5).to_string(index=False))
