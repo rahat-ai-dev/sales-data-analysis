@@ -69,11 +69,10 @@ df = pd.DataFrame({
     "product":  product_names,
     "category": np.array(categories)[product_idx],
     "region":   np.array(regions)[region_idx],
-    "price":    prices_dirty,
+    "price":     prices_dirty,
     "quantity": quantity,
     "discount": discount,
 })
-
 print(f"\n[1] Raw Data Generated — {len(df)} rows, {df.shape[1]} columns")
 print(df.head(6).to_string(index=False))
 
@@ -111,3 +110,92 @@ df['month_name']   = df['date'].dt.strftime('%b')
 
 print("\n[2] Cleaned DataFrame (first 5 rows):")
 print(df[['product','region','price','quantity','discount','net_revenue']].head(5).to_string(index=False))
+
+
+
+# ─────────────────────────────────────────────
+# Step 3: Analysis and Insights
+# ─────────────────────────────────────────────
+print("\n" + "-" * 60)
+print("  Step 3 — Analysis & Insights")
+print("-" * 60)
+
+total_rev=df["net_revenue"].sum()
+total_orders=len(df)
+avg_order_val=df["net_revenue"].mean()
+
+print(f"\n[Q-1] Total net revenue: ${total_rev:>12,.2f}")
+print(f"Total orders:{total_orders:>5}")
+print(f"Average Order : ${avg_order_val:>8,.2f} ")
+
+
+print("\n[Q-2] product wise revenue:")
+
+prod_rev=(
+    df.groupby("product",observed=True)["net_revenue"]
+    .agg(total="sum", orders="count",avg="mean")
+    .sort_values("total",ascending=False)
+)
+
+prod_rev_display=prod_rev.copy()
+prod_rev_display["total"]=prod_rev_display["total"].map("${:,.2f}".format)
+prod_rev_display["avg"]=prod_rev_display["avg"].map("${:,.2f}".format)
+print(prod_rev_display.to_string())
+
+print("\n[Q3] Region-wise Performance:")
+
+region_stats=(
+    df.groupby("region",observed=True)
+    .agg(
+      revenue=("net_revenue","sum"),
+      orders=("net_revenue","count"),
+      avg_sale=("net_revenue","mean"),
+      avg_disc=("discount","mean"),
+    )
+    .sort_values("revenue",ascending=False)
+)
+region_display=region_stats.copy()
+region_display["revenue"]=region_display["revenue"].map("${:,.2f}".format)
+region_display["avg_sale"]=region_display["avg_sale"].map("${:,.2f}".format)
+region_display["avg_disc"]=region_display["avg_disc"].map("${:,.1f}".format)
+print(region_display.to_string())
+
+print("\n[Q4] Monthly Revenue Trend:")
+
+monthly=(
+    df.groupby("month",observed=True)["net_revenue"]
+    .sum().reset_index()
+)
+monthly.columns=["month","revenue"]
+month_labels=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+monthly["month_name"]=monthly["month"].apply(lambda x:month_labels[x-1])
+
+max_rev=monthly["revenue"].max()
+for _, row in monthly.iterrows():
+    bar_len=int(row["revenue"]/max_rev*30)
+    bar="*"*bar_len
+    print(f"{row["month_name"]:>3} {bar:<30} ${row["revenue"]:>9,.2f}")
+
+print("\n[Q5] Discount vs Avg Net Revenue:")
+disc_impact=(
+    df.groupby("discount")["net_revenue"]
+    .agg(avg="mean", count="count").reset_index()
+)
+for _, row in disc_impact.iterrows():
+    print(f"Discount{int(row["discount"]):>2}% -> avg${row["avg"]:>9,.2f} ({int(row["count"])} orders)")
+
+
+print("\n[Q6] Category-wise Share:")
+cat_rev=df.groupby("category",observed=True)["net_revenue"].sum()
+total=cat_rev.sum()
+
+for cat,rev in cat_rev.sort_values(ascending=False).items():
+    pct=rev/total*100
+    print(f"{cat:<15} ${rev:>12,.2f} ({pct:.1f}%)")
+
+
+
+
+
+
+
