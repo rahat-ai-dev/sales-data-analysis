@@ -194,6 +194,38 @@ for cat,rev in cat_rev.sort_values(ascending=False).items():
     print(f"{cat:<15} ${rev:>12,.2f} ({pct:.1f}%)")
 
 
+# ─────────────────────────────────────────────
+# Step 4: NumPy Statistics
+# ─────────────────────────────────────────────
+print("\n" + "-" * 60)
+print("  Step 4 — NumPy Statistics")
+print("-" * 60)
+
+rev_arr=df["net_revenue"].values
+
+stats=[
+    ("Mean", np.mean(rev_arr)),
+    ("Median", np.median(rev_arr)),
+    ("Std Dev", np.std(rev_arr)),
+    ("Min", np.min(rev_arr)),
+    ("Max", np.max(rev_arr)),
+    ("25th pct", np.percentile(rev_arr, 25)),
+    ("75th pct", np.percentile(rev_arr, 75)),
+    ("90th pct", np.percentile(rev_arr, 90)),
+]
+for label, value in stats:
+    print(f" {label:<10}: ${value:>10,.2f}")
+
+
+threshold = np.percentile(rev_arr,90)
+top_orders=df[df["net_revenue"]>=threshold]
+print(f"\n Top 10% orders(>=${threshold:,.2f}):")
+print(f" Count :{len(top_orders)}")
+print(f" Revenue: $ {top_orders["net_revenue"].sum():,.2f}({top_orders["net_revenue"].sum()/total_rev*100:.1f}% of total)")
+
+corr=np.corrcoef(df["quantity"].values, df["net_revenue"].values)[0,1]
+print(f"\n Quantity ↔ Revenue correlation:{corr:.3f}")
+
 
 
 
